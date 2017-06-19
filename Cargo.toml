@@ -1,0 +1,10 @@
+[package]
+name = "game_engine"
+version = "0.1.0"
+authors = ["Spencer Haney <theOfficialSkara@gmail.com>"]
+
+[dependencies]
+cgmath = "0.14.1"
+gl = "0.6.2"
+glfw = "0.14.0"
+image = "0.14.0"
