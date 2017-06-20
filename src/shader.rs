@@ -1,7 +1,7 @@
 
 extern crate cgmath;
 
-use std::ffi::{CString, CStr};
+use std::ffi::{CString};
 use std::fs::File;
 use std::io::Read;
 use std::ptr;
@@ -16,10 +16,16 @@ pub struct Shader {
     pub id: u32,
 }
 
+fn to_cstr(string : &str) -> CString {
+    CString::new(string.as_bytes()).unwrap()
+}
+
+#[allow(dead_code)]
 impl Shader {
     pub fn new(vertex_src_path: &str, fragment_src_path: &str) -> Shader {
         let mut shader = Shader { id: 0 };
-        // 1. retrieve the vertex/fragment source code from filesystem
+
+        // Get the source
         let mut v_shader_file = File::open(vertex_src_path).expect(&format!("Failed to open {}", vertex_src_path));
         let mut f_shader_file = File::open(fragment_src_path).expect(&format!("Failed to open {}", fragment_src_path));
         let mut vertex_code = String::new();
@@ -34,25 +40,28 @@ impl Shader {
         let v_shader_code = CString::new(vertex_code.as_bytes()).unwrap();
         let f_shader_code = CString::new(fragment_code.as_bytes()).unwrap();
 
-        // 2. compile shaders
+        // Compile shaders
         unsafe {
             // vertex shader
             let vertex = gl::CreateShader(gl::VERTEX_SHADER);
             gl::ShaderSource(vertex, 1, &v_shader_code.as_ptr(), ptr::null());
             gl::CompileShader(vertex);
             shader.check_compile_errors(vertex, "VERTEX");
+
             // fragment Shader
             let fragment = gl::CreateShader(gl::FRAGMENT_SHADER);
             gl::ShaderSource(fragment, 1, &f_shader_code.as_ptr(), ptr::null());
             gl::CompileShader(fragment);
             shader.check_compile_errors(fragment, "FRAGMENT");
+
             // shader Program
             let id = gl::CreateProgram();
             gl::AttachShader(id, vertex);
             gl::AttachShader(id, fragment);
             gl::LinkProgram(id);
             shader.check_compile_errors(id, "PROGRAM");
-            // delete the shaders as they're linked into our program now and no longer necessary
+
+            // Delete shaders
             gl::DeleteShader(vertex);
             gl::DeleteShader(fragment);
             shader.id = id;
@@ -66,29 +75,28 @@ impl Shader {
         gl::UseProgram(self.id)
     }
 
-    /// utility uniform functions
-    pub unsafe fn set_bool(&self, name: &CStr, value: bool) {
-        gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value as i32);
+    pub unsafe fn set_bool(&self, name: &str, value: bool) {
+        gl::Uniform1i(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), value as i32);
     }
-    /// ------------------------------------------------------------------------
-    pub unsafe fn set_int(&self, name: &CStr, value: i32) {
-        gl::Uniform1i(gl::GetUniformLocation(self.id, name.as_ptr()), value);
+
+    pub unsafe fn set_int(&self, name: &str, value: i32) {
+        gl::Uniform1i(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), value);
     }
-    /// ------------------------------------------------------------------------
-    pub unsafe fn set_float(&self, name: &CStr, value: f32) {
-        gl::Uniform1f(gl::GetUniformLocation(self.id, name.as_ptr()), value);
+
+    pub unsafe fn set_float(&self, name: &str, value: f32) {
+        gl::Uniform1f(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), value);
     }
-    /// ------------------------------------------------------------------------
-    pub unsafe fn set_vector3(&self, name: &CStr, value: &Vector3<f32>) {
-        gl::Uniform3fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, value.as_ptr());
+
+    pub unsafe fn set_vector3(&self, name: &str, value: &Vector3<f32>) {
+        gl::Uniform3fv(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), 1, value.as_ptr());
     }
-    /// ------------------------------------------------------------------------
-    pub unsafe fn set_vec3(&self, name: &CStr, x: f32, y: f32, z: f32) {
-        gl::Uniform3f(gl::GetUniformLocation(self.id, name.as_ptr()), x, y, z);
+
+    pub unsafe fn set_vec3(&self, name: &str, x: f32, y: f32, z: f32) {
+        gl::Uniform3f(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), x, y, z);
     }
-    /// ------------------------------------------------------------------------
-    pub unsafe fn set_mat4(&self, name: &CStr, mat: &Matrix4<f32>) {
-        gl::UniformMatrix4fv(gl::GetUniformLocation(self.id, name.as_ptr()), 1, gl::FALSE, mat.as_ptr());
+
+    pub unsafe fn set_mat4(&self, name: &str, mat: &Matrix4<f32>) {
+        gl::UniformMatrix4fv(gl::GetUniformLocation(self.id, to_cstr(&name).as_ptr()), 1, gl::FALSE, mat.as_ptr());
     }
 
     /// utility function for checking shader compilation/linking errors.
@@ -116,6 +124,5 @@ impl Shader {
                          str::from_utf8(&info_log).unwrap());
             }
         }
-
     }
 }

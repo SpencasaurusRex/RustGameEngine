@@ -7,7 +7,6 @@ use shader::Shader;
 use self::glfw::{Context, Key, Action};
 use self::gl::types::*;
 use std::sync::mpsc::Receiver;
-use std::ffi::CString;
 use std::ptr;
 use std::str;
 use std::mem;
@@ -39,14 +38,19 @@ fn main() {
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
     let (shader, vao, ebo) = unsafe {
+        // Ask for the number of supported vertex attributes
+        let mut n_attrs : i32 = 0;
+        gl::GetIntegerv(gl::MAX_VERTEX_ATTRIBS, &mut n_attrs);
+        println!("Max vertex attributes: {}", n_attrs); // TODO switch out for log
+
         // build and compile our shaders
         let test_shader = Shader::new("src/testingShader.vs", "src/testingShader.fs");
 
         let vertices: [f32; 12] = [
              0.5,  0.5, 0.0, // top-right
-             0.5, -0.5, 0.0, // bottom-right
-            -0.5, -0.5, 0.0, // bottom-left
-            -0.5,  0.5, 0.0, // top-left
+             0.5, -0.5, 0.5, // bottom-right
+            -0.5, -0.5, 1.0, // bottom-left
+            -0.5,  0.5, 0.5, // top-left
         ];
 
         let indices: [u32; 6] = [
@@ -110,8 +114,9 @@ fn main() {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
 
             // Set uniform variables
-            let c_str = CString::new("z".as_bytes()).unwrap();
-            shader.set_float(&c_str, f32::sin(t) * 0.5 + 0.5);
+            shader.set_float(&"x", f32::sin(t * 0.7) * 0.5 + 0.5);
+            shader.set_float(&"y", f32::sin(t * 1.1) * 0.5 + 0.5);
+            shader.set_float(&"z", f32::sin(t * 1.3) * 0.5 + 0.5);
 
             // Draw
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, 0 as *const c_void);
