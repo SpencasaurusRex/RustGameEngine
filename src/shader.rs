@@ -1,6 +1,3 @@
-
-extern crate cgmath;
-
 use std::ffi::{CString};
 use std::fs::File;
 use std::io::Read;
@@ -10,7 +7,7 @@ use std::str;
 use gl;
 use gl::types::*;
 
-use self::cgmath::{Matrix, Matrix4, Vector3, Array};
+use cgmath::{Matrix, Matrix4, Vector3, Array};
 
 pub struct Shader {
     pub id: u32,

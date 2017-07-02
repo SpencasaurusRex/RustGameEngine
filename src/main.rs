@@ -1,24 +1,24 @@
 extern crate glfw;
+use glfw::{Context, Key, Action};
+
 extern crate gl;
+use gl::types::*;
 
-mod shader;
+extern crate game_engine;
+use game_engine::shader::Shader;
 
-use shader::Shader;
-use self::glfw::{Context, Key, Action};
-use self::gl::types::*;
 use std::sync::mpsc::Receiver;
-use std::ptr;
-use std::str;
-use std::mem;
+use std::{ptr, str, mem};
 use std::os::raw::c_void;
 
 const CLEAR_COLOR: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
 const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 800;
+const TITLE: &'static str = "Game Engine";
+
+// TODO switch out for full rust glfw
 
 fn main() {
-    let mut t = 0.0;
-
     // glfw: initialize and configure
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
@@ -27,7 +27,7 @@ fn main() {
     glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
 
     // glfw window creation
-    let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, "Game Engine", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, TITLE, glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window");
 
     window.make_current();
@@ -38,7 +38,7 @@ fn main() {
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
     let (shader, vao, ebo) = unsafe {
-        // Ask for the number of supported vertex attributes
+        // Ask for the number of supported vertex attributes (usually 16)
         let mut n_attrs : i32 = 0;
         gl::GetIntegerv(gl::MAX_VERTEX_ATTRIBS, &mut n_attrs);
         println!("Max vertex attributes: {}", n_attrs); // TODO switch out for log
@@ -100,6 +100,7 @@ fn main() {
 
     // render loop
     while !window.should_close() {
+        let t = glfw.get_time() as f32;
         // events
         process_events(&mut window, &events);
 
@@ -114,9 +115,9 @@ fn main() {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
 
             // Set uniform variables
-            shader.set_float(&"x", f32::sin(t * 0.7) * 0.5 + 0.5);
-            shader.set_float(&"y", f32::sin(t * 1.1) * 0.5 + 0.5);
-            shader.set_float(&"z", f32::sin(t * 1.3) * 0.5 + 0.5);
+            shader.set_float("x", f32::sin(t * 1.4) * 0.5 + 0.5);
+            shader.set_float("y", f32::sin(t * 2.2) * 0.5 + 0.5);
+            shader.set_float("z", f32::sin(t * 2.6) * 0.5 + 0.5);
 
             // Draw
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, 0 as *const c_void);
@@ -125,20 +126,20 @@ fn main() {
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         window.swap_buffers();
         glfw.poll_events();
-        t += 0.005;
     }
 }
 
 fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::WindowEvent)>) {
     for (_, event) in glfw::flush_messages(events) {
         match event {
-            glfw::WindowEvent::FramebufferSize(width, height) => {
-                // make sure the viewport matches the new window dimensions; note that width and
-                // height will be significantly larger than specified on retina displays.
-                unsafe { gl::Viewport(0, 0, width, height) }
+            glfw::WindowEvent::FramebufferSize(width, height) => unsafe {
+                gl::Viewport(0, 0, width, height)
+            },
+            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) =>
+                window.set_should_close(true),
+            _ => {
+                println!("{:?}", event);
             }
-            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
-            _ => { println!("{:?}", event); }
         }
     }
 }
