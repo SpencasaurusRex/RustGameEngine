@@ -16,7 +16,7 @@ const SCR_WIDTH: u32 = 800;
 const SCR_HEIGHT: u32 = 800;
 const TITLE: &'static str = "Game Engine";
 
-// TODO switch out for full rust glfw
+// TODO Look into using Amethyst engine or gfx-rs
 
 fn main() {
     // glfw: initialize and configure
